@@ -2,9 +2,12 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/prometheus/prometheus/promql/parser"
@@ -51,11 +54,42 @@ func main() {
 		})
 	}
 
-	for metric := range metrics {
-		// Print only non recording rules.
-		// if !strings.Contains(metric, ":") {
-		fmt.Println(metric)
-		// }
+	metricCount := map[string]int{}
+
+	csvfile, err := os.Open("./vals.csv")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	r := csv.NewReader(csvfile)
+	for {
+		record, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		count, err := strconv.Atoi(record[1])
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		metricCount[record[0]] += count
 	}
 
+	// Final number of metrics required to run the queries.
+	count := 0
+	for metric := range metrics {
+		count += metricCount[metric]
+	}
+
+	fmt.Println(count)
 }
+
+// for row in $(cat vals.json | jq -c '.data.result[]'); do
+// 	_jq() {
+// 	echo ${row} | jq -r ${1}
+// 	}
+// 	echo $(_jq '.metric.__name__ + "," + .value[1]')
+// done > vals.csv
