@@ -35,6 +35,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	metrics := map[string]struct{}{}
+
 	for _, query := range queries {
 		expr, err := parser.ParseExpr(query)
 		if err != nil {
@@ -43,9 +45,17 @@ func main() {
 
 		parser.Inspect(expr, func(node parser.Node, path []parser.Node) error {
 			if n, ok := node.(*parser.VectorSelector); ok {
-				fmt.Println(n.Name)
+				metrics[n.Name] = struct{}{}
 			}
 			return nil
 		})
 	}
+
+	for metric := range metrics {
+		// Print only non recording rules.
+		// if !strings.Contains(metric, ":") {
+		fmt.Println(metric)
+		// }
+	}
+
 }
